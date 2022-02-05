@@ -1,6 +1,5 @@
 %%%-------------------------------------------------------------------
 %%% @author marti
-%%% @copyright (C) 2022, <COMPANY>
 %%% @doc
 %%%
 %%% @end
@@ -13,14 +12,19 @@
 -export([calculate/1]).
 
 calculate(N) ->
-  spawn(fun() -> sieve(N, self()) end),
+  Pid = self(),
+  spawn(fun() -> sieve(N, Pid) end),
   receive
     {done, Primes} -> Primes
   end.
 
-sieve(N, Callback) when N =< 1 ->
-  io:format("Can't calculate primes up to ~p\n", N);
-sieve(2, Callback) ->
-  {};
 sieve(N, Callback) ->
-  {}.
+  sieve(Callback, lists:seq(2, N), []).
+
+sieve(Callback, [], Primes) ->
+  Callback ! {done, Primes};
+sieve(Callback, [N | Candidates], Primes) ->
+  io:format("checking ~p out of ~p candidates, up to ~p primes ~p\n", [N, length(Candidates), length(Primes), Primes]),
+  NewPrimes = Primes ++ [N],
+  NewCandidates = [P || P <- Candidates, P rem N =/= 0],
+  sieve(Callback, NewCandidates, NewPrimes).
