@@ -19,11 +19,11 @@ calculate(N) ->
     {done, Primes} ->
       End = erlang:timestamp(),
       TDiff = timer:now_diff(End, Start),
-      io:format("Calculated ~p primes in ~p seconds:\n", [length(Primes), TDiff / 100000]),
+      io:format("Calculated ~p primes in ~p seconds:\n", [length(Primes), TDiff / 1000000]),
       io:format("~w\n", [Primes])
   end.
 
-
+-spec sieve(pos_integer(), pid()) -> any().
 sieve(N, Callback) ->
   % Place not_prime instead of 1 so indices match the numbers.
   sieve(Callback, N, 2, [not_prime] ++ lists:seq(2, N)).
@@ -35,26 +35,23 @@ sieve(Callback, N, Prime, Marked) ->
   NLimit = math:sqrt(N),
   if
     NextPrime > NLimit -> % Stop early if above sqrt(N)
-      respond_with_primes(Callback, Marked);
+      respond_with_primes(Callback, NewMarked);
     true ->
       case NextPrime of
-        no_unmarked -> respond_with_primes(Callback, Marked);
+        no_unmarked -> respond_with_primes(Callback, NewMarked);
         _ -> sieve(Callback, N, NextPrime, NewMarked)
       end
   end.
 
 
 mark_multiples_of(N, Limit, Marked) ->
-  io:fwrite("N is ~p with limit ~p\n", [N, Limit]),
   mark_multiples_of(N, N + N, Limit, Marked).
 
-mark_multiples_of(_, Index, Limit, Marked) when Index > Limit ->
+mark_multiples_of(_N, Index, Limit, Marked) when Index > Limit ->
   Marked;
 mark_multiples_of(N, Index, Limit, Marked) ->
-  {Left, [_ | Right]} = lists:split(Index - 1, Marked),
+  {Left, [_NotPrime | Right]} = lists:split(Index - 1, Marked),
   NewMarked = Left ++ [not_prime] ++ Right,
-  %io:fwrite("index is ~p marked becomes ~p\n", [Index, NewMarked]),
-  %timer:sleep(100),
   mark_multiples_of(N, Index + N, Limit, NewMarked).
 
 next_unmarked([]) ->
